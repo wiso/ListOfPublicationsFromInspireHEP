@@ -1,6 +1,7 @@
 import os
 from io import open
 import subprocess
+import tempfile
 import re
 from glob import glob
 
@@ -18,11 +19,14 @@ def modify_item(item):
         os.environ['EDITOR'] = editor_command
     editor_command = editor_command.strip()
 
-    with open('correction.txt', 'w') as f:
+    tmp_filename = next(tempfile._get_candidate_names())
+
+    with open(tmp_filename, 'w') as f:
         f.write(item)
-    subprocess.call([editor_command, 'correction.txt'])
-    with open('correction.txt') as f:
+    subprocess.call([editor_command, tmp_filename])
+    with open(tmp_filename) as f:
         new_item = f.read()
+    os.rm(tmp_filename)
     return new_item
 
 tmp_files = glob('tmp*')
