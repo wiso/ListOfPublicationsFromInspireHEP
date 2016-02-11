@@ -62,7 +62,10 @@ def modify_item(item):
 
     with open(tmp_filename, 'w') as f:
         f.write(item)
-    subprocess.call([editor_command, tmp_filename])
+    if editor_command == "atom":
+        subprocess.call([editor_command, '-w', tmp_filename])
+    else:
+        subprocess.call([editor_command, tmp_filename])
     with open(tmp_filename) as f:
         new_item = f.read()
     os.remove(tmp_filename)
