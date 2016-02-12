@@ -22,7 +22,8 @@ regex_unicode = re.compile('[^\x00-\x7F]')
 regex_latex_error = re.compile('Error', re.IGNORECASE)
 def help_unicode(item):
     m = regex_unicode.search(item)
-    print item[:m.start()] + "***UNICODE****" + item[m.start():m.end()] + "*****UNICODE******" + item[m.end():]
+    if m:
+        print item[:m.start()] + "***UNICODE****" + item[m.start():m.end()] + "*****UNICODE******" + item[m.end():]
 
 
 def replace_unicode(item):
@@ -54,18 +55,15 @@ def modify_item(item):
     editor_command = os.environ.get("EDITOR")
     if not editor_command:
         print "you haven't defined a default EDITOR, (e.g. export EDITOR=emacs)"
-        editor_command = raw_input("enter the command to open an editor (e.g. emacs/atom/...): ")
+        editor_command = raw_input("enter the command to open an editor (e.g. emacs/atom -w/...): ")
         os.environ['EDITOR'] = editor_command
-    editor_command = editor_command.strip()
+    editor_command = editor_command.strip().split()
 
     tmp_filename = next(tempfile._get_candidate_names())
 
     with open(tmp_filename, 'w') as f:
         f.write(item)
-    if editor_command == "atom":
-        subprocess.call([editor_command, '-w', tmp_filename])
-    else:
-        subprocess.call([editor_command, tmp_filename])
+    subprocess.call(editor_command + [tmp_filename])
     with open(tmp_filename) as f:
         new_item = f.read()
     os.remove(tmp_filename)
