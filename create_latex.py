@@ -3,7 +3,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Create pdf with bibliography',
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 epilog='example: create-latex bibtex_2016-02-07.bib')
+                                 epilog='example: create_latex bibtex_2016-02-07.bib')
 parser.add_argument('bibtex')
 args = parser.parse_args()
 
