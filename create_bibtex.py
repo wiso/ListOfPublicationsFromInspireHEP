@@ -9,7 +9,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Create bibliography from inspirehep',
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 epilog='example: create_bibtex.py --query author%3AR.Turra.1+AND+collection%3Apublished')
+                                 epilog='example: create_bibtex.py --query author%3AR.Turra.1+AND+collection%3Apublished where R.Turra.1 is from here: https://inspirehep.net/author/profile/R.Turra.1')
 parser.add_argument('--baseurl', default="https://inspirehep.net/")
 parser.add_argument('--query', help='query', required=True)
 args = parser.parse_args()
