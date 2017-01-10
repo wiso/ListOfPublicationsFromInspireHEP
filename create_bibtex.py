@@ -49,13 +49,13 @@ for query in build_all_queries(**inspire_args):
     if not r.status_code == requests.codes.ok:
         raise IOError("cannot connect to %s" % url)
 
-    content = r.content
+    content = r.text  # this is unicode
 
     if content.count('@') == 0:
         break
-    
+
     try:
-        bibtex += ''.join(ElementTree.fromstring(r.content).itertext())
+        bibtex += ''.join(ElementTree.fromstring(r.content).itertext())  # ET wants not-decoded data -> use content
     except AttributeError:
         # special case for python < 2.7
         def itertext(self):
