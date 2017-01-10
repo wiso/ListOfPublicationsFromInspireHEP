@@ -53,8 +53,23 @@ for query in build_all_queries(**inspire_args):
 
     if content.count('@') == 0:
         break
-
-    bibtex += ''.join(ElementTree.fromstring(r.content).itertext())
+    
+    try:
+        bibtex += ''.join(ElementTree.fromstring(r.content).itertext())
+    except AttributeError:
+        # special case for python < 2.7
+        def itertext(self):
+            tag = self.tag
+            if not isinstance(tag, str) and tag is not None:
+                return
+            if self.text:
+                yield self.text
+            for e in self:
+                for s in itertext(e):
+                    yield s
+                if e.tail:
+                    yield e.tail
+        bibtex += ''.join(itertext(ElementTree.fromstring(r.content)))
     bibtex += r"%% ==============="
     logger.info('%d items found...', bibtex.count('@'))
 
