@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description='Check LaTeX bibliography',
                                  epilog='example: check_biblio bibtex_2016-02-07.bib')
 parser.add_argument('bibtex', default="https://inspirehep.net/")
 parser.add_argument('--fix-unicode', action='store_true')
+parser.add_argument('--use-bibtex', action='store_true', help='use bibtex instead of biblatex')
 args = parser.parse_args()
 
 print args
@@ -79,7 +80,7 @@ biblio = f.read()
 
 regex_key = re.compile(r'@[a-z]+\{([A-Za-z0-9:]+),')
 
-latex_template = r"""
+latex_template_biblatex = r"""
 \documentclass{article}
 \usepackage[backend=bibtex, style=numeric-comp, sorting=none, firstinits=true, defernumbers=true]{biblatex}
 \addbibresource{tmp.bib}
@@ -92,6 +93,22 @@ Try to cite: \cite{CITATION}.
 \printbibliography
 \end{document}
 """
+
+latex_template_bibtex = r"""
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{syntonly}
+\syntaxonly
+\begin{document}
+Try to cite: \cite{CITATION}.
+\bibliographystyle{unsrt}
+\bibliography{tmp}
+\end{document}
+"""
+
+latex_template = latex_template_bibtex if args.use_bibtex else latex_template_biblatex
+
 try:
     substitutions = []
     biblio_splitted = biblio.split("\n\n")
