@@ -1,5 +1,5 @@
 #!/usr/bin/env python
- # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import os
 from io import open
@@ -16,8 +16,6 @@ parser.add_argument('bibtex', default="https://inspirehep.net/")
 parser.add_argument('--fix-unicode', action='store_true')
 parser.add_argument('--use-bibtex', action='store_true', help='use bibtex instead of biblatex')
 args = parser.parse_args()
-
-print args
 
 regex_unicode = re.compile('[^\x00-\x7F]')
 regex_latex_error = re.compile('Error', re.IGNORECASE)
