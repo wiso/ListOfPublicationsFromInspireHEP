@@ -8,8 +8,9 @@ import tempfile
 import re
 from glob import glob
 import argparse
+import difflib
 
-if os.nt:
+if os.name == "nt":
     try:
         from colorama import init
         init()
@@ -78,6 +79,23 @@ def modify_item(item):
     os.remove(tmp_filename)
     return new_item
 
+def show_diff(old, new):
+    output_old = ''
+    output_new = ''
+    sm = difflib.SequenceMatcher(None, old, new)
+
+    for status, a1, a2, b1, b2 in sm.get_opcodes():
+        if status == 'equal':
+            output_old += sm.a[a1:a2]
+            output_new += sm.b[b1:b2]
+        else:
+            color_old = {'replace': '\033[91m', 'insert': '\033[92m', 'delete': '\033[91m'}[status]
+            color_new = {'replace': '\033[92m', 'insert': '\033[92m', 'delete': '\033[91m'}[status]
+            output_old += color_old + sm.a[a1:a2] + '\033[0m'
+            output_new += color_new + sm.b[b1:b2] + '\033[0m'
+    print output_old
+    print output_new
+
 tmp_files = glob('tmp*')
 for f in tmp_files:
     os.remove(f)
@@ -127,6 +145,7 @@ try:
         if args.fix_unicode:
             item_unicode_fixed = replace_unicode(item)
             if item_unicode_fixed != item:
+                show_diff(item, item_unicode_fixed)
                 substitutions.append((item, item_unicode_fixed))
                 item = item_unicode_fixed
         tmp_biblio.write(item)
