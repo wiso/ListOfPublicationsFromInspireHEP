@@ -9,6 +9,13 @@ import re
 from glob import glob
 import argparse
 
+if os.nt:
+    try:
+        from colorama import init
+        init()
+    except ImportError:
+        print "you should install colorama to see colors on Windows"
+
 parser = argparse.ArgumentParser(description='Check LaTeX bibliography',
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog='example: check_biblio bibtex_2016-02-07.bib')
