@@ -21,7 +21,8 @@ parser = argparse.ArgumentParser(description='Check LaTeX bibliography',
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
                                  epilog='example: check_biblio bibtex_2016-02-07.bib')
 parser.add_argument('bibtex', default="https://inspirehep.net/")
-parser.add_argument('--fix-unicode', action='store_true')
+parser.add_argument('--fix-unicode', action='store_true', help='automatically fix common unicode problems')
+parser.add_argument('--fix-atlas', action='store_true', help='automatically fix known problems in ATLAS experiment bibliography')
 parser.add_argument('--use-bibtex', action='store_true', help='use bibtex instead of biblatex')
 args = parser.parse_args()
 
@@ -42,6 +43,12 @@ def replace_unicode(item):
         char = match.group(0)
         return chars[char]
     return re.sub('(' + '|'.join(chars.keys()) + ')', replace_chars, item)
+
+def fix_atlas(item):
+    issues = {u'WW$^{∗}$→eνμν': u'$WW^\ast\to e\nu\mu\nu$'}
+    for old, new in issues.iteritems():
+        item.replace(old, new)
+    return item
 
 
 def write_error_latex(filename):
