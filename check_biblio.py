@@ -40,7 +40,6 @@ def replace_unicode(item):
 
     def replace_chars(match):
         char = match.group(0)
-        print 'unicode found, replacing "%s" with "%s"' % (char, chars[char])
         return chars[char]
     return re.sub('(' + '|'.join(chars.keys()) + ')', replace_chars, item)
 
@@ -91,9 +90,19 @@ def show_diff(old, new):
             color_new = {'replace': '\033[92m', 'insert': '\033[92m', 'delete': '\033[91m'}[status]
             output_old += color_old + sm.a[a1:a2] + '\033[0m'
             output_new += color_new + sm.b[b1:b2] + '\033[0m'
+    print "<" * 30
     print output_old
+    print ">" * 30
     print output_new
 
+def ask(question, choices=None):
+    while True:
+        answer = raw_input(question)
+        if choices is None or answer in choices:
+            break
+        print "\r"
+    return answer
+    
 tmp_files = glob('tmp*')
 for f in tmp_files:
     os.remove(f)
@@ -139,13 +148,18 @@ try:
     for ikey, item in enumerate(biblio_splitted, 1):
         if '@' not in item:
             continue
-        tmp_biblio = open('tmp.bib', 'w')
+
+        # automatic fix
         if args.fix_unicode:
             item_unicode_fixed = replace_unicode(item)
             if item_unicode_fixed != item:
+                print "unicode fixed"
                 show_diff(item, item_unicode_fixed)
-                substitutions.append((item, item_unicode_fixed))
-                item = item_unicode_fixed
+                if ask("accept changes [y/n]?", ('y', 'n')) == 'y':
+                    substitutions.append((item, item_unicode_fixed))
+                    item = item_unicode_fixed
+                    
+        tmp_biblio = open('tmp.bib', 'w')                    
         tmp_biblio.write(item)
         tmp_biblio.close()
         m = regex_key.search(item)
