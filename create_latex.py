@@ -20,4 +20,4 @@ subprocess.call(['bibtex', 'publications.aux'])
 subprocess.call(['pdflatex', 'publications.tex'])
 subprocess.call(['pdflatex', 'publications.tex'])
 
-print "output written in publications.pdf"
+print("output written in publications.pdf")

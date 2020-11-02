@@ -9,8 +9,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Create bibliography from inspirehep',
                                  formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 epilog='example: create_bibtex.py --query author%3AR.Turra.1+AND+collection%3Apublished where R.Turra.1 is from here: https://inspirehep.net/author/profile/R.Turra.1')
-parser.add_argument('--baseurl', default="https://inspirehep.net/")
+                                 epilog='example: create_bibtex.py --query author%3AR.Turra.1%20and%20collection%3APublished where R.Turra.1 is from here: https://inspirehep.net/authors?sort=bestmatch&size=25&page=1&q=turra')
+parser.add_argument('--baseurl', default="https://inspirehep.net/api/")
 parser.add_argument('--query', help='query', required=True)
 args = parser.parse_args()
 
@@ -24,38 +24,40 @@ BASEURL = args.baseurl
 
 
 def build_query(**kwargs):
-    query = 'search?'
-    query += '&'.join([k + "=" + str(v) for k, v in kwargs.iteritems()])
+    query = 'literature?'
+    query += '&'.join([k + "=" + str(v) for k, v in list(kwargs.items())])
     return query
 
 
 def build_all_queries(nper_step=50, **kwargs):
-    kwargs['rg'] = nper_step
-    if 'jrec' not in kwargs:
-        kwargs['jrec'] = 1
+    kwargs['size'] = nper_step
+    kwargs['page'] = 1
     while True:
         yield build_query(**kwargs)
-        kwargs['jrec'] += nper_step
+        kwargs['page'] += 1
 
 
-inspire_args = {'p': args.query,
-                'of': 'hx', 'em': 'B', 'sf': 'year', 'so': 'd', 'rg': 5, 'tc': 'p', 'jrec': 1}
+inspire_args = {'q': args.query, 'format': 'bibtex',
+                #'of': 'hx', 'em': 'B', 'sf': 'year', 'so': 'd', 'rg': 5, 'tc': 'p'
+                }
 
-bibtex = u""
+bibtex = ""
 
 for query in build_all_queries(**inspire_args):
     url = BASEURL + query
+    print(url)
     r = requests.get(url)
     if not r.status_code == requests.codes.ok:
         raise IOError("cannot connect to %s" % url)
 
     content = r.text  # this is unicode
+    print(content)
 
     if content.count('@') == 0:
         break
 
     try:
-        bibtex += ''.join(ElementTree.fromstring(r.content).itertext())  # ET wants not-decoded data -> use content
+        bibtex += content
     except AttributeError:
         # special case for python < 2.7
         def itertext(self):

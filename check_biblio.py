@@ -22,19 +22,19 @@ regex_latex_error = re.compile('Error', re.IGNORECASE)
 def help_unicode(item):
     m = regex_unicode.search(item)
     if m:
-        print item[:m.start()] + "***UNICODE****" + item[m.start():m.end()] + "*****UNICODE******" + item[m.end():]
+        print(item[:m.start()] + "***UNICODE****" + item[m.start():m.end()] + "*****UNICODE******" + item[m.end():])
 
 
 def replace_unicode(item):
-    chars = {u'\xa0': ' ',
-             u'\u2009\u2009': ' ',
-             u'−': '-'}
+    chars = {'\xa0': ' ',
+             '\u2009\u2009': ' ',
+             '−': '-'}
 
     def replace_chars(match):
         char = match.group(0)
-        print 'unicode found, replacing "%s" with "%s"' % (char, chars[char])
+        print('unicode found, replacing "%s" with "%s"' % (char, chars[char]))
         return chars[char]
-    return re.sub('(' + '|'.join(chars.keys()) + ')', replace_chars, item)
+    return re.sub('(' + '|'.join(list(chars.keys())) + ')', replace_chars, item)
 
 
 def write_error_latex(filename):
@@ -45,17 +45,17 @@ def write_error_latex(filename):
         if regex_latex_error.search(line):
             break
     else:
-        print "no error in the output"
+        print("no error in the output")
         return
-    print "error from the log:"
-    print '\n    '.join(splitted[iline - 3: iline + 3])
+    print("error from the log:")
+    print('\n    '.join(splitted[iline - 3: iline + 3]))
 
 
 def modify_item(item):
     editor_command = os.environ.get("EDITOR")
     if not editor_command:
-        print "you haven't defined a default EDITOR, (e.g. export EDITOR=emacs)"
-        editor_command = raw_input("enter the command to open an editor (e.g. emacs/atom -w/...): ")
+        print("you haven't defined a default EDITOR, (e.g. export EDITOR=emacs)")
+        editor_command = input("enter the command to open an editor (e.g. emacs/atom -w/...): ")
         os.environ['EDITOR'] = editor_command
     editor_command = editor_command.strip().split()
 
@@ -133,14 +133,14 @@ try:
         error = False
         stdout = open('stdout.temp', 'w+')
         while True:
-            print 'checking key %s %d/%d' % (key, ikey, nkey)
+            print('checking key %s %d/%d' % (key, ikey, nkey))
             try:
                 subprocess.check_call(['pdflatex', '-interaction=nonstopmode', 'tmp.tex'], stdout=stdout)
                 subprocess.check_call(['bibtex', 'tmp'], stdout=stdout)
                 subprocess.check_call(['pdflatex', '-interaction=nonstopmode', 'tmp.tex'], stdout=stdout)
                 subprocess.check_call(['pdflatex', '-interaction=nonstopmode', 'tmp.tex'], stdout=stdout)
             except subprocess.CalledProcessError as error:
-                print "problem running %s with item %s" % (error.cmd[0], key)
+                print("problem running %s with item %s" % (error.cmd[0], key))
                 stdout.flush()
                 write_error_latex('stdout.temp')
                 help_unicode(item)
@@ -160,4 +160,4 @@ finally:
         biblio = biblio.replace(old, new)
     with open(args.bibtex, 'w') as f:
         f.write(biblio)
-    print "%d fixes done" % len(substitutions)
+    print("%d fixes done" % len(substitutions))
