@@ -45,13 +45,11 @@ bibtex = ""
 
 for query in build_all_queries(**inspire_args):
     url = BASEURL + query
-    print(url)
     r = requests.get(url)
     if not r.status_code == requests.codes.ok:
-        raise IOError("cannot connect to %s" % url)
+        raise IOError("cannot connect to %s, code: %s" % (url, r.status_code))
 
     content = r.text  # this is unicode
-    print(content)
 
     if content.count('@') == 0:
         break

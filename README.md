@@ -6,7 +6,9 @@ First create the bibtex file downloading all your bib entry, for the options try
 
     ./create-bibtex -h
 
-it downloads the entries from http://inspirehep.net/ and produces a bibtex file as `bibtex_2016-02-07.bib`. Usually many LaTeX errors are present, you can fix them with:
+it downloads the entries from http://inspirehep.net/ and produces a bibtex file as `bibtex_2016-02-07.bib`. If you get problems you can download the bibtex from inspire.hep, going on your profile and using the "cite all" button.
+
+ Usually many LaTeX errors are present, you can fix them with:
 
     ./check_biblio.py <bibtexfilename.bib>
 

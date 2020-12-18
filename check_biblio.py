@@ -76,7 +76,7 @@ for f in tmp_files:
 f = open(args.bibtex)
 biblio = f.read()
 
-regex_key = re.compile(r'@[a-z]+\{([A-Za-z0-9:]+),')
+regex_key = re.compile(r'@[a-z]+\{([A-Za-z0-9\-:]+),')
 
 latex_template_biblatex = r"""
 \documentclass{article}
@@ -123,6 +123,8 @@ try:
         tmp_biblio.write(item)
         tmp_biblio.close()
         m = regex_key.search(item)
+        if not m:
+            print("cannot match string %s with regex %s" % (item, regex_key.pattern))
         key = m.group(1)
 
         latex_file = open('tmp.tex', 'w')
