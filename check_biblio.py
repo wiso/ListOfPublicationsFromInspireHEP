@@ -28,7 +28,8 @@ def help_unicode(item):
 def replace_unicode(item):
     chars = {'\xa0': ' ',
              '\u2009\u2009': ' ',
-             '−': '-'}
+             '−': '-',
+             '∗': '*'}
 
     def replace_chars(match):
         char = match.group(0)
