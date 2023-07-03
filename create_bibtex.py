@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 import datetime
 from xml.etree import ElementTree
 import io
@@ -45,7 +46,12 @@ bibtex = ""
 
 for query in build_all_queries(**inspire_args):
     url = BASEURL + query
-    r = requests.get(url)
+    session = requests.Session()
+    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[ 500, 502, 503, 504 ])
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    r = session.get(url)
     if not r.status_code == requests.codes.ok:
         raise IOError("cannot connect to %s, code: %s" % (url, r.status_code))
 
