@@ -163,34 +163,38 @@ Try to cite: \cite{CITATION}.
     """
 
     latex_template = latex_template_bibtex if use_bibtex else latex_template_biblatex
-
-    with open("tmp.bib", "w", encoding="utf-8") as tmp_biblio:
-        tmp_biblio.write(tex)
-        tmp_biblio.close()
-    with open("tmp.tex", "w", encoding="utf-8") as latex_file:
-        latex_file.write(latex_template.replace("CITATION", key))
-
-    error = None
-    stdout = open("stdout.temp", "w+")
-    try:
-        subprocess.check_call(
-            ["pdflatex", "-interaction=nonstopmode", "tmp.tex"], stdout=stdout
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        open(os.path.join(tmpdirname, "tmp.bib"), "w", encoding="utf-8").write(tex)
+        open(os.path.join(tmpdirname, "tmp.tex"), "w", encoding="utf-8").write(
+            latex_template.replace("CITATION", key)
         )
-        subprocess.check_call(["bibtex", "tmp"], stdout=stdout)
-        subprocess.check_call(
-            ["pdflatex", "-interaction=nonstopmode", "tmp.tex"], stdout=stdout
-        )
-        subprocess.check_call(
-            ["pdflatex", "-interaction=nonstopmode", "tmp.tex"], stdout=stdout
-        )
-    except subprocess.CalledProcessError:
-        stdout.flush()
-        error = find_error_latex("stdout.temp")
 
-    os.remove("tmp.aux")
-    os.remove("tmp.blg")
-    os.remove("tmp.bbl")
-    return error
+        error = None
+        stdout_fn = os.path.join(tmpdirname, "stdout.temp")
+        stdout = open(stdout_fn, "w+")
+
+        try:
+            subprocess.check_call(
+                ["pdflatex", "-interaction=nonstopmode", "tmp.tex"],
+                stdout=stdout,
+                cwd=tmpdirname,
+            )
+            subprocess.check_call(["bibtex", "tmp"], cwd=tmpdirname, stdout=stdout)
+            subprocess.check_call(
+                ["pdflatex", "-interaction=nonstopmode", "tmp.tex"],
+                stdout=stdout,
+                cwd=tmpdirname,
+            )
+            subprocess.check_call(
+                ["pdflatex", "-interaction=nonstopmode", "tmp.tex"],
+                stdout=stdout,
+                cwd=tmpdirname,
+            )
+        except subprocess.CalledProcessError:
+            stdout.flush()
+            error = find_error_latex(stdout_fn)
+
+        return error
 
 
 tmp_files = glob("tmp*")
@@ -254,7 +258,7 @@ try:
 
         if raw_original != raw_proposed:
             print(diff_strings(raw_original, raw_proposed))
-        substitutions.append((raw_original, raw_proposed))
+            substitutions.append((raw_original, raw_proposed))
         cur.execute(
             "INSERT INTO entries VALUES (?, ?, ?)",
             (entry.key, raw_original, raw_proposed),
@@ -270,6 +274,8 @@ finally:
         if old == new:
             print("BIG PROBLEM: old == new")
         print(diff_strings(old, new))
+        if old not in biblio:
+            print("BIG PROBLEM: old not in biblio")
         biblio = biblio.replace(old, new)
     new_biblio_fn = args.bibtex.replace(".bib", "_new.bib")
     with open(new_biblio_fn, "w", encoding="utf-8") as f:
