@@ -183,7 +183,7 @@ Try to cite: \cite{CITATION}.
         return error
 
 
-def run_entry(entry, cur, substitutions):
+def run_entry(entry, cur, fix_unicode, substitutions):
     raw_original = entry.raw.strip()
     raw_proposed = raw_original
 
@@ -201,7 +201,7 @@ def run_entry(entry, cur, substitutions):
             substitutions.append((raw_original, raw_proposed))
         return
 
-    if args.fix_unicode:
+    if fix_unicode:
         raw_proposed = replace_unicode(raw_original)
         if raw_proposed != raw_original:
             print(f"unicode found in {entry.key}, fixing")
@@ -259,7 +259,7 @@ if __name__ == "__main__":
         nentries = len(biblio_parsed.entries)
         for ientry, entry in enumerate(biblio_parsed.entries, 1):
             print("checking key %s %d/%d" % (entry.key, ientry, nentries))
-            run_entry(entry, cur, substitutions)
+            run_entry(entry, cur, args.fix_unicode, substitutions)
 
     finally:
         print("committing to database")
