@@ -22,4 +22,4 @@ Usually, many LaTeX errors are present, you can fix them with:
 
 Finally to create the pdf:
 
-    ./create_latex.py <bibtexfilename.bib>
+    ./create_latex.py <bibtexfilename_new.bib>
