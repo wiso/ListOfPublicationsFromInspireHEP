@@ -39,7 +39,7 @@ jobs:
       run: |
         pip install ruff
         ruff --output-format=github .
-        continue-on-error: true
+      continue-on-error: true
     - name: Test with pytest
       run: |
         pytest
