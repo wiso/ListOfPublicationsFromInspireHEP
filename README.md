@@ -6,7 +6,7 @@ Create a list of publications from InspireHEP and produce a LaTeX document and a
 
 In your (virtual)environment:
 
-    pip install -r requirements.txt
+    python -m pip install -r requirements.txt
 
 ## How to use it
 
