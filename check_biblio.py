@@ -66,6 +66,7 @@ def diff_strings(a: str, b: str) -> str:
     return "".join(output)
 
 
+regex_unicode = re.compile("[^\x00-\x7F]")
 def help_unicode(item: str) -> Optional[str]:
     m = regex_unicode.search(item)
     if m:
@@ -217,10 +218,10 @@ def run_entry(entry, db, fix_unicode, substitutions):
     raw_original = entry.raw.strip()
     raw_proposed = raw_original
 
-    raw_proposed = db.query(raw_original)
-    if raw_proposed is not None:
-        if raw_original != raw_proposed:
-            substitutions.append((raw_original, raw_proposed))
+    from_cache = db.query(raw_original)
+    if from_cache is not None:
+        if raw_original != from_cache:
+            substitutions.append((raw_original, from_cache))
         return
 
     if fix_unicode:
@@ -254,9 +255,6 @@ if __name__ == "__main__":
         "--use-bibtex", action="store_true", help="use bibtex instead of biblatex"
     )
     args = parser.parse_args()
-
-    regex_unicode = re.compile("[^\x00-\x7F]")
-    regex_latex_error = re.compile("Error", re.IGNORECASE)
 
     try:
         substitutions = []
