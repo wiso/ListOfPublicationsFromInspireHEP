@@ -5,7 +5,6 @@ import os
 import subprocess
 import tempfile
 import re
-from glob import glob
 import argparse
 import sqlite3
 import difflib
@@ -137,7 +136,8 @@ def check_latex_entry(key: str, tex: str, use_bibtex: bool = False) -> Optional[
 
     latex_template_biblatex = r"""
 \documentclass{article}
-\usepackage[backend=bibtex, style=numeric-comp, sorting=none, firstinits=true, defernumbers=true]{biblatex}
+\usepackage[backend=bibtex, style=numeric-comp, sorting=none,
+            firstinits=true, defernumbers=true]{biblatex}
 \addbibresource{tmp.bib}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
