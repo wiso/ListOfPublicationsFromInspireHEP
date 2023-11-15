@@ -366,3 +366,5 @@ TSWLatexianTemp*
 *.bib
 *.pdf
 publications.tex
+
+db.sqlite
