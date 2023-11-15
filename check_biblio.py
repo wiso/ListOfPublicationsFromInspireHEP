@@ -9,6 +9,7 @@ import argparse
 import sqlite3
 import difflib
 from typing import Optional
+import threading
 
 import bibtexparser
 
@@ -18,18 +19,25 @@ class DataBase:
 
     def __init__(self, filename: str):
         self.filename = filename
-        self.con = sqlite3.connect(filename)
+        self.con = sqlite3.connect(filename, check_same_thread=False)
         self.cur = self.con.cursor()
         self.cur.execute("CREATE TABLE IF NOT EXISTS entries(key, original, final)")
+        self.lock = threading.Lock()
+        self.nupdates = 0
 
     def update(self, key: str, original: str, final: str):
-        self.cur.execute("INSERT INTO entries VALUES (?, ?, ?)", (key, original.strip(), final.strip()))
+        with self.lock:
+            self.cur.execute("INSERT INTO entries VALUES (?, ?, ?)", (key, original.strip(), final.strip()))
+            self.nupdates += 1
+            if self.nupdates % 20 == 0:
+                self.con.commit()
 
     def query(self, original: str):
         try:
             query = "SELECT * FROM entries WHERE original=?"
-            res = self.cur.execute(query, (original,))
-            r = res.fetchone()
+            with self.lock:
+                res = self.cur.execute(query, (original,))
+                r = res.fetchone()
         except sqlite3.OperationalError as ex:
             print(f"problem executing query {query} with {original}")
             print("error: %s" % ex)
@@ -213,7 +221,7 @@ Try to cite: \cite{CITATION}.
 
         return error
 
-
+lock = threading.Lock()
 def run_entry(entry, db, fix_unicode, substitutions):
     raw_original = entry.raw.strip()
     raw_proposed = raw_original
@@ -221,25 +229,29 @@ def run_entry(entry, db, fix_unicode, substitutions):
     from_cache = db.query(raw_original)
     if from_cache is not None:
         if raw_original != from_cache:
-            substitutions.append((raw_original, from_cache))
+            with lock:
+                substitutions.append((raw_original, from_cache))
         return
 
     if fix_unicode:
         raw_proposed = replace_unicode(raw_original)
         if raw_proposed != raw_original:
-            print(f"unicode found in {entry.key}, fixing")
+            with lock:
+                print(f"unicode found in {entry.key}, fixing")
 
     while True:
         error = check_latex_entry(entry.key, raw_proposed, args.use_bibtex)
         if error is None:
             break
 
-        print(f"problem running item {entry.key}")
-        raw_proposed = modify_item(raw_proposed, error).strip()
+        with lock:
+            print(f"problem running item {entry.key}")
+            raw_proposed = modify_item(raw_proposed, error).strip()
 
     if raw_original != raw_proposed:
-        print(diff_strings(raw_original, raw_proposed))
-        substitutions.append((raw_original, raw_proposed))
+        with lock:
+            print(diff_strings(raw_original, raw_proposed))
+            substitutions.append((raw_original, raw_proposed))
     db.update(entry.key, raw_original, raw_proposed)
 
 
@@ -267,13 +279,10 @@ if __name__ == "__main__":
         print("found %d entries" % len(biblio_parsed.entries))
 
         nentries = len(biblio_parsed.entries)
-        # import multiprocessing
-        # import functools
-        # p = multiprocessing.Pool(4)
-        # p.map(functools.partial(run_entry, cur=cur, fix_unicode=args.fix_unicode, substitutions=substitutions), biblio_parsed.entries)
-        for ientry, entry in enumerate(biblio_parsed.entries, 1):
-            print("checking key %s %d/%d" % (entry.key, ientry, nentries))
-            run_entry(entry, db, args.fix_unicode, substitutions)
+        from multiprocessing.pool import ThreadPool
+        import functools
+        p = ThreadPool(4)
+        p.map(functools.partial(run_entry, db=db, fix_unicode=args.fix_unicode, substitutions=substitutions), biblio_parsed.entries)
 
     finally:
 
@@ -284,7 +293,7 @@ if __name__ == "__main__":
                 print("BIG PROBLEM: old == new")
             print(diff_strings(old, new))
             if old not in biblio:
-                print("BIG PROBLEM: old not in biblio")
+                print("BIG PROBLEM: old not in biblio: %s" % old)
             biblio = biblio.replace(old, new)
         new_biblio_fn = args.bibtex.replace(".bib", "_new.bib")
         with open(new_biblio_fn, "w", encoding="utf-8") as f:
