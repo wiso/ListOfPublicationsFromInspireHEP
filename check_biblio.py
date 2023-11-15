@@ -13,20 +13,6 @@ from typing import Optional
 import bibtexparser
 
 
-parser = argparse.ArgumentParser(
-    description="Check LaTeX bibliography",
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    epilog="example: check_biblio bibtex_2016-02-07.bib",
-)
-parser.add_argument("bibtex", default="https://inspirehep.net/")
-parser.add_argument("--fix-unicode", action="store_true")
-parser.add_argument(
-    "--use-bibtex", action="store_true", help="use bibtex instead of biblatex"
-)
-args = parser.parse_args()
-
-regex_unicode = re.compile("[^\x00-\x7F]")
-regex_latex_error = re.compile("Error", re.IGNORECASE)
 
 
 def diff_strings(a: str, b: str) -> str:
@@ -236,42 +222,58 @@ def run_entry(entry, cur, substitutions):
         (entry.key, raw_original, raw_proposed),
     )
 
-
-try:
-    substitutions = []
-    biblio_parsed = bibtexparser.parse_file(args.bibtex)
-    con = sqlite3.connect("db.sqlite")
-    cur = con.cursor()
-    # check if the table exists
-    res = cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='entries'"
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Check LaTeX bibliography",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="example: check_biblio bibtex_2016-02-07.bib",
     )
-    if not res.fetchone():
-        cur.execute("CREATE TABLE entries(key, original, final)")
+    parser.add_argument("bibtex", default="https://inspirehep.net/")
+    parser.add_argument("--fix-unicode", action="store_true")
+    parser.add_argument(
+        "--use-bibtex", action="store_true", help="use bibtex instead of biblatex"
+    )
+    args = parser.parse_args()
 
-    print("found %d comments" % len(biblio_parsed.comments))
-    print("found %d strings" % len(biblio_parsed.strings))
-    print("found %d preambles" % len(biblio_parsed.preambles))
-    print("found %d entries" % len(biblio_parsed.entries))
+    regex_unicode = re.compile("[^\x00-\x7F]")
+    regex_latex_error = re.compile("Error", re.IGNORECASE)
 
-    nentries = len(biblio_parsed.entries)
-    for ientry, entry in enumerate(biblio_parsed.entries, 1):
-        print("checking key %s %d/%d" % (entry.key, ientry, nentries))
-        run_entry(entry, cur, substitutions)
 
-finally:
-    print("committing to database")
-    con.commit()
+    try:
+        substitutions = []
+        biblio_parsed = bibtexparser.parse_file(args.bibtex)
+        con = sqlite3.connect("db.sqlite")
+        cur = con.cursor()
+        # check if the table exists
+        res = cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='entries'"
+        )
+        if not res.fetchone():
+            cur.execute("CREATE TABLE entries(key, original, final)")
 
-    biblio = open(args.bibtex, encoding="utf-8").read()
-    print(f"applying {len(substitutions)} substitutions")
-    for old, new in substitutions:
-        if old == new:
-            print("BIG PROBLEM: old == new")
-        print(diff_strings(old, new))
-        if old not in biblio:
-            print("BIG PROBLEM: old not in biblio")
-        biblio = biblio.replace(old, new)
-    new_biblio_fn = args.bibtex.replace(".bib", "_new.bib")
-    with open(new_biblio_fn, "w", encoding="utf-8") as f:
-        f.write(biblio)
+        print("found %d comments" % len(biblio_parsed.comments))
+        print("found %d strings" % len(biblio_parsed.strings))
+        print("found %d preambles" % len(biblio_parsed.preambles))
+        print("found %d entries" % len(biblio_parsed.entries))
+
+        nentries = len(biblio_parsed.entries)
+        for ientry, entry in enumerate(biblio_parsed.entries, 1):
+            print("checking key %s %d/%d" % (entry.key, ientry, nentries))
+            run_entry(entry, cur, substitutions)
+
+    finally:
+        print("committing to database")
+        con.commit()
+
+        biblio = open(args.bibtex, encoding="utf-8").read()
+        print(f"applying {len(substitutions)} substitutions")
+        for old, new in substitutions:
+            if old == new:
+                print("BIG PROBLEM: old == new")
+            print(diff_strings(old, new))
+            if old not in biblio:
+                print("BIG PROBLEM: old not in biblio")
+            biblio = biblio.replace(old, new)
+        new_biblio_fn = args.bibtex.replace(".bib", "_new.bib")
+        with open(new_biblio_fn, "w", encoding="utf-8") as f:
+            f.write(biblio)
