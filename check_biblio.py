@@ -13,6 +13,36 @@ from typing import Optional
 import bibtexparser
 
 
+class DataBase:
+    """A simple database to store the original and final strings"""
+
+    def __init__(self, filename: str):
+        self.filename = filename
+        self.con = sqlite3.connect(filename)
+        self.cur = self.con.cursor()
+        self.cur.execute("CREATE TABLE IF NOT EXISTS entries(key, original, final)")
+
+    def update(self, key: str, original: str, final: str):
+        self.cur.execute("INSERT INTO entries VALUES (?, ?, ?)", (key, original.strip(), final.strip()))
+
+    def query(self, original: str):
+        try:
+            query = "SELECT * FROM entries WHERE original=?"
+            res = self.cur.execute(query, (original,))
+            r = res.fetchone()
+        except sqlite3.OperationalError as ex:
+            print(f"problem executing query {query} with {original}")
+            print("error: %s" % ex)
+            raise ex
+        if r:
+            return r[2]
+        else:
+            return None
+
+    def __del__(self):
+        print("closing database")
+        self.con.commit()
+        self.con.close()
 
 
 def diff_strings(a: str, b: str) -> str:
@@ -183,20 +213,12 @@ Try to cite: \cite{CITATION}.
         return error
 
 
-def run_entry(entry, cur, fix_unicode, substitutions):
+def run_entry(entry, db, fix_unicode, substitutions):
     raw_original = entry.raw.strip()
     raw_proposed = raw_original
 
-    try:
-        query = "SELECT * FROM entries WHERE original=?"
-        res = cur.execute(query, (raw_original,))
-        r = res.fetchone()
-    except sqlite3.OperationalError as ex:
-        print(f"problem executing query {query} with {raw_original}")
-        print("error: %s" % ex)
-        raise ex
-    if r:
-        raw_proposed = r[2].strip()
+    raw_proposed = db.query(raw_original)
+    if raw_proposed is not None:
         if raw_original != raw_proposed:
             substitutions.append((raw_original, raw_proposed))
         return
@@ -217,10 +239,8 @@ def run_entry(entry, cur, fix_unicode, substitutions):
     if raw_original != raw_proposed:
         print(diff_strings(raw_original, raw_proposed))
         substitutions.append((raw_original, raw_proposed))
-    cur.execute(
-        "INSERT INTO entries VALUES (?, ?, ?)",
-        (entry.key, raw_original, raw_proposed),
-    )
+    db.update(entry.key, raw_original, raw_proposed)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -238,18 +258,10 @@ if __name__ == "__main__":
     regex_unicode = re.compile("[^\x00-\x7F]")
     regex_latex_error = re.compile("Error", re.IGNORECASE)
 
-
     try:
         substitutions = []
         biblio_parsed = bibtexparser.parse_file(args.bibtex)
-        con = sqlite3.connect("db.sqlite")
-        cur = con.cursor()
-        # check if the table exists
-        res = cur.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='entries'"
-        )
-        if not res.fetchone():
-            cur.execute("CREATE TABLE entries(key, original, final)")
+        db = DataBase("db.sqlite")
 
         print("found %d comments" % len(biblio_parsed.comments))
         print("found %d strings" % len(biblio_parsed.strings))
@@ -257,13 +269,15 @@ if __name__ == "__main__":
         print("found %d entries" % len(biblio_parsed.entries))
 
         nentries = len(biblio_parsed.entries)
+        # import multiprocessing
+        # import functools
+        # p = multiprocessing.Pool(4)
+        # p.map(functools.partial(run_entry, cur=cur, fix_unicode=args.fix_unicode, substitutions=substitutions), biblio_parsed.entries)
         for ientry, entry in enumerate(biblio_parsed.entries, 1):
             print("checking key %s %d/%d" % (entry.key, ientry, nentries))
-            run_entry(entry, cur, args.fix_unicode, substitutions)
+            run_entry(entry, db, args.fix_unicode, substitutions)
 
     finally:
-        print("committing to database")
-        con.commit()
 
         biblio = open(args.bibtex, encoding="utf-8").read()
         print(f"applying {len(substitutions)} substitutions")
