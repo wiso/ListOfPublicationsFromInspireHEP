@@ -197,12 +197,44 @@ Try to cite: \cite{CITATION}.
         return error
 
 
-tmp_files = glob("tmp*")
-for f in tmp_files:
-    os.remove(f)
+def run_entry(entry, cur, substitutions):
+    raw_original = entry.raw.strip()
+    raw_proposed = raw_original
 
+    try:
+        query = "SELECT * FROM entries WHERE original=?"
+        res = cur.execute(query, (raw_original,))
+        r = res.fetchone()
+    except sqlite3.OperationalError as ex:
+        print(f"problem executing query {query} with {raw_original}")
+        print("error: %s" % ex)
+        raise ex
+    if r:
+        raw_proposed = r[2].strip()
+        if raw_original != raw_proposed:
+            substitutions.append((raw_original, raw_proposed))
+        return
 
-regex_key = re.compile(r"@[a-z]+\{([A-Za-z0-9\-:]+),")
+    if args.fix_unicode:
+        raw_proposed = replace_unicode(raw_original)
+        if raw_proposed != raw_original:
+            print(f"unicode found in {entry.key}, fixing")
+
+    while True:
+        error = check_latex_entry(entry.key, raw_proposed, args.use_bibtex)
+        if error is None:
+            break
+
+        print(f"problem running item {entry.key}")
+        raw_proposed = modify_item(raw_proposed, error).strip()
+
+    if raw_original != raw_proposed:
+        print(diff_strings(raw_original, raw_proposed))
+        substitutions.append((raw_original, raw_proposed))
+    cur.execute(
+        "INSERT INTO entries VALUES (?, ?, ?)",
+        (entry.key, raw_original, raw_proposed),
+    )
 
 
 try:
@@ -224,45 +256,8 @@ try:
 
     nentries = len(biblio_parsed.entries)
     for ientry, entry in enumerate(biblio_parsed.entries, 1):
-        raw_original = entry.raw.strip()
-        raw_proposed = raw_original
-
         print("checking key %s %d/%d" % (entry.key, ientry, nentries))
-
-        try:
-            query = "SELECT * FROM entries WHERE original=?"
-            res = cur.execute(query, (raw_original,))
-            r = res.fetchone()
-        except sqlite3.OperationalError as ex:
-            print(f"problem executing query {query} with {raw_original}")
-            print("error: %s" % ex)
-            raise ex
-        if r:
-            raw_proposed = r[2].strip()
-            if raw_original != raw_proposed:
-                substitutions.append((raw_original, raw_proposed))
-            continue
-
-        if args.fix_unicode:
-            raw_proposed = replace_unicode(raw_original)
-            if raw_proposed != raw_original:
-                print(f"unicode found in {entry.key}, fixing")
-
-        while True:
-            error = check_latex_entry(entry.key, raw_proposed, args.use_bibtex)
-            if error is None:
-                break
-
-            print(f"problem running item {entry.key}")
-            raw_proposed = modify_item(raw_proposed, error).strip()
-
-        if raw_original != raw_proposed:
-            print(diff_strings(raw_original, raw_proposed))
-            substitutions.append((raw_original, raw_proposed))
-        cur.execute(
-            "INSERT INTO entries VALUES (?, ?, ?)",
-            (entry.key, raw_original, raw_proposed),
-        )
+        run_entry(entry, cur, substitutions)
 
 finally:
     print("committing to database")
