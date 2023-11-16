@@ -13,6 +13,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
 import tqdm
+import logging
 
 import bibtexparser
 
@@ -121,8 +122,7 @@ def replace_unicode(item: str) -> str:
 
     def replace_chars(match):
         char = match.group(0)
-        with print_lock:
-            print('unicode found, replacing "%s" with "%s"' % (char, chars[char]))
+        logging.debug('unicode found, replacing "%s" with "%s"', char, chars[char])
         return chars[char]
 
     return re.sub("(" + "|".join(list(chars.keys())) + ")", replace_chars, item)
@@ -147,13 +147,6 @@ def find_error_latex(filename: str) -> str:
 
 def modify_item(item: str, error: str) -> str:
     editor_command = os.environ.get("EDITOR")
-    if not editor_command:
-        print("you haven't defined a default EDITOR, (e.g. export EDITOR=emacs)")
-        editor_command = input(
-            "enter the command to open an editor (e.g. emacs/atom -w/...): "
-        )
-        os.environ["EDITOR"] = editor_command
-    editor_command = editor_command.strip()
 
     tmp_filename = next(tempfile._get_candidate_names())
 
@@ -244,26 +237,19 @@ Try to cite: \cite{CITATION}.
         return error
 
 
-global_counter = 0
-
-
-def run_entry(entry, nentries, db, fix_unicode):
-    with print_lock:
-        global global_counter
-        global_counter += 1
-        #print(f"checking {entry.key} {global_counter}/{nentries}")
+def run_entry(entry, db, fix_unicode) -> None:
     raw_original = entry.raw.strip()
-    raw_proposed = raw_original
 
     from_cache = db.query(raw_original)
     if from_cache is not None:
         return
 
+    raw_proposed = raw_original
+
     if fix_unicode:
         raw_proposed = replace_unicode(raw_original)
         if raw_proposed != raw_original:
-            with print_lock:
-                print(f"unicode found in {entry.key}, fixing")
+            logging.debug("unicode found in %s, fixing", entry.key)
 
     while True:
         error = check_latex_entry(entry.key, raw_proposed, args.use_bibtex)
@@ -294,6 +280,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    editor_command = os.environ.get("EDITOR")
+    if not editor_command:
+        print("you haven't defined a default EDITOR, (e.g. export EDITOR=emacs)")
+        editor_command = input(
+            "enter the command to open an editor (e.g. emacs/atom -w/...): "
+        )
+        os.environ["EDITOR"] = editor_command.strip()
+
     try:
         biblio_parsed = bibtexparser.parse_file(args.bibtex)
         db = DataBase("db.sqlite")
@@ -309,22 +303,29 @@ if __name__ == "__main__":
             with tqdm.tqdm(total=nentries) as pbar:
                 pbar.set_description("checking entries")
                 pbar.set_postfix_str(f"nthreads={args.nthreads}")
-                partial_function = functools.partial(
-                    run_entry, nentries=nentries, db=db, fix_unicode=args.fix_unicode
-                )
+
+                def partial_function(entry):
+                    with print_lock:
+                        pbar.set_description(entry.key)
+                    run_entry(entry, db, args.fix_unicode)
+                    with print_lock:
+                        pbar.update()
+
                 futures = {}
+
                 for entry in biblio_parsed.entries:
                     future = p.submit(partial_function, entry)
-                    future.add_done_callback(lambda _: pbar.update())
                     futures[future] = entry.key
                 for future in as_completed(futures):
                     key = futures[future]
                     try:
                         future.result()
                     except Exception as ex:
-                        print(f"problem with entry: {key}")
+                        with print_lock:
+                            pbar.write(f"problem with entry: {key}")
                         raise ex
-                    pbar.write(f"finished {key}")
+                    with print_lock:
+                        pbar.set_description(key)
     finally:
         biblio = open(args.bibtex, encoding="utf-8").read()
         substitutions = db.substitutions
