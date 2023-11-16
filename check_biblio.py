@@ -11,13 +11,16 @@ import difflib
 from typing import Optional, List, Tuple
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import functools
-import tqdm
 import logging
+import sys
 
+import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 import bibtexparser
 
 print_lock = threading.Lock()
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 
 class DataBase:
@@ -44,15 +47,15 @@ class DataBase:
             if original != final:
                 self.substitutions.append((original, final))
 
-    def query(self, original: str):
+    def query(self, original: str) -> Optional[str]:
         try:
             query = "SELECT * FROM entries WHERE original=?"
             with self._lock:
                 res = self._cur.execute(query, (original,))
                 r = res.fetchone()
         except sqlite3.OperationalError as ex:
-            print(f"problem executing query {query} with {original}")
-            print("error: %s" % ex)
+            log.warning(f"problem executing query {query} with {original}")
+            log.warning("error: %s" % ex)
             raise ex
         if r:
             proposed = r[2]
@@ -62,12 +65,12 @@ class DataBase:
             return proposed
         return None
 
-    def commit(self):
+    def commit(self) -> None:
         with self._lock:
             self._con.commit()
 
     def __del__(self):
-        print("closing database")
+        log.info("closing database")
         self._con.commit()
         self._con.close()
 
@@ -122,7 +125,7 @@ def replace_unicode(item: str) -> str:
 
     def replace_chars(match):
         char = match.group(0)
-        logging.debug('unicode found, replacing "%s" with "%s"', char, chars[char])
+        log.debug('unicode found, replacing "%s" with "%s"', char, chars[char])
         return chars[char]
 
     return re.sub("(" + "|".join(list(chars.keys())) + ")", replace_chars, item)
@@ -249,7 +252,7 @@ def run_entry(entry, db, fix_unicode) -> None:
     if fix_unicode:
         raw_proposed = replace_unicode(raw_original)
         if raw_proposed != raw_original:
-            logging.debug("unicode found in %s, fixing", entry.key)
+            log.debug("unicode found in %s, fixing", entry.key)
 
     while True:
         error = check_latex_entry(entry.key, raw_proposed, args.use_bibtex)
@@ -257,12 +260,12 @@ def run_entry(entry, db, fix_unicode) -> None:
             break
 
         with print_lock:
-            print(f"problem running item {entry.key}")
+            log.error(f"problem running item {entry.key}")
             raw_proposed = modify_item(raw_proposed, error).strip()
 
     if raw_original != raw_proposed:
         with print_lock:
-            print(diff_strings(raw_original, raw_proposed))
+            log.info(diff_strings(raw_original, raw_proposed))
     db.update(entry.key, raw_original, raw_proposed)
 
 
@@ -272,7 +275,7 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="example: check_biblio bibtex_2016-02-07.bib",
     )
-    parser.add_argument("bibtex", default="https://inspirehep.net/")
+    parser.add_argument("bibtex")
     parser.add_argument("--fix-unicode", action="store_true")
     parser.add_argument("--nthreads", type=int, default=5)
     parser.add_argument(
@@ -290,42 +293,49 @@ if __name__ == "__main__":
 
     try:
         biblio_parsed = bibtexparser.parse_file(args.bibtex)
-        db = DataBase("db.sqlite")
+    except FileNotFoundError:
+        print(f"cannot find file {args.bibtex}")
+        sys.exit(1)
 
-        print("found %d comments" % len(biblio_parsed.comments))
-        print("found %d strings" % len(biblio_parsed.strings))
-        print("found %d preambles" % len(biblio_parsed.preambles))
-        print("found %d entries" % len(biblio_parsed.entries))
+    print(f"Found {len(biblio_parsed.comments)} comments")
+    print(f"Found {len(biblio_parsed.strings)} strings")
+    print(f"Found {len(biblio_parsed.preambles)} preambles")
+    print(f"Found {len(biblio_parsed.entries)} entries")
+
+    try:
+        db = DataBase("db.sqlite")
 
         nentries = len(biblio_parsed.entries)
 
         with ThreadPoolExecutor(max_workers=args.nthreads) as p:
             with tqdm.tqdm(total=nentries) as pbar:
-                pbar.set_description("checking entries")
-                pbar.set_postfix_str(f"nthreads={args.nthreads}")
+                with logging_redirect_tqdm():
+                    pbar.set_description("checking entries")
+                    pbar.set_postfix_str(f"nthreads={args.nthreads}")
 
-                def partial_function(entry):
-                    with print_lock:
-                        pbar.set_description(entry.key)
-                    run_entry(entry, db, args.fix_unicode)
-                    with print_lock:
-                        pbar.update()
-
-                futures = {}
-
-                for entry in biblio_parsed.entries:
-                    future = p.submit(partial_function, entry)
-                    futures[future] = entry.key
-                for future in as_completed(futures):
-                    key = futures[future]
-                    try:
-                        future.result()
-                    except Exception as ex:
+                    def partial_function(entry):
                         with print_lock:
-                            pbar.write(f"problem with entry: {key}")
-                        raise ex
-                    with print_lock:
-                        pbar.set_description(key)
+                            pbar.set_description(entry.key)
+                        run_entry(entry, db, args.fix_unicode)
+                        with print_lock:
+                            pbar.update()
+
+                    futures = {}
+
+                    futures = {
+                        p.submit(partial_function, entry): entry.key
+                        for entry in biblio_parsed.entries
+                    }
+                    for future in as_completed(futures):
+                        key = futures[future]
+                        try:
+                            future.result()
+                        except Exception as ex:
+                            with print_lock:
+                                pbar.write(f"problem with entry: {key}")
+                            raise ex
+                        with print_lock:
+                            pbar.set_description(key)
     finally:
         biblio = open(args.bibtex, encoding="utf-8").read()
         substitutions = db.substitutions
