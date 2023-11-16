@@ -12,6 +12,7 @@ from typing import Optional, List, Tuple
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
+import tqdm
 
 import bibtexparser
 
@@ -250,7 +251,7 @@ def run_entry(entry, nentries, db, fix_unicode):
     with print_lock:
         global global_counter
         global_counter += 1
-        print(f"checking {entry.key} {global_counter}/{nentries}")
+        #print(f"checking {entry.key} {global_counter}/{nentries}")
     raw_original = entry.raw.strip()
     raw_proposed = raw_original
 
@@ -305,22 +306,25 @@ if __name__ == "__main__":
         nentries = len(biblio_parsed.entries)
 
         with ThreadPoolExecutor(max_workers=args.nthreads) as p:
-            partial_function = functools.partial(
-                run_entry, nentries=nentries, db=db, fix_unicode=args.fix_unicode
-            )
-            futures = {
-                p.submit(partial_function, entry): entry.key
-                for entry in biblio_parsed.entries
-            }
-            for future in as_completed(futures):
-                key = futures[future]
-                try:
-                    future.result()
-                except Exception as ex:
-                    print(f"problem with entry: {key}")
-                    raise ex
-                print(f"finished {key}")
-
+            with tqdm.tqdm(total=nentries) as pbar:
+                pbar.set_description("checking entries")
+                pbar.set_postfix_str(f"nthreads={args.nthreads}")
+                partial_function = functools.partial(
+                    run_entry, nentries=nentries, db=db, fix_unicode=args.fix_unicode
+                )
+                futures = {}
+                for entry in biblio_parsed.entries:
+                    future = p.submit(partial_function, entry)
+                    future.add_done_callback(lambda _: pbar.update())
+                    futures[future] = entry.key
+                for future in as_completed(futures):
+                    key = futures[future]
+                    try:
+                        future.result()
+                    except Exception as ex:
+                        print(f"problem with entry: {key}")
+                        raise ex
+                    pbar.write(f"finished {key}")
     finally:
         biblio = open(args.bibtex, encoding="utf-8").read()
         substitutions = db.substitutions
