@@ -24,12 +24,6 @@ After installation, all commands are available:
     listofpublications create-bibtex --help
     listofpublications create-latex --help
 
-Legacy individual commands are also available (backward compatible):
-
-    check_biblio --help
-    create_bibtex --help
-    create_latex --help
-
 From a local checkout, you can still install it with `pip` in editable mode:
 
     python -m pip install -e .
