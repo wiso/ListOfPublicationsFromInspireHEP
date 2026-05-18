@@ -8,15 +8,8 @@ Create a list of publications from InspireHEP and produce a LaTeX document and a
 
 The simplest way to run the CLI commands once without installing them is `uvx`:
 
+    uvx --from listofpublicationsfrominspirehep listofpublications -h
     uvx --from listofpublicationsfrominspirehep listofpublications check-biblio -h
-    uvx --from listofpublicationsfrominspirehep listofpublications create-bibtex -h
-    uvx --from listofpublicationsfrominspirehep listofpublications create-latex -h
-
-Or use the individual command names directly:
-
-    uvx --from listofpublicationsfrominspirehep check_biblio -h
-    uvx --from listofpublicationsfrominspirehep create_bibtex -h
-    uvx --from listofpublicationsfrominspirehep create_latex -h
 
 ## Install
 
@@ -24,17 +17,18 @@ The simplest persistent install for end users is `pipx`:
 
     pipx install listofpublicationsfrominspirehep
 
-After installation, you can use the main command with subcommands:
+After installation, all commands are available:
 
-    listofpublications check-biblio -h
-    listofpublications create-bibtex -h
-    listofpublications create-latex -h
+    listofpublications --help
+    listofpublications check-biblio --help
+    listofpublications create-bibtex --help
+    listofpublications create-latex --help
 
-Or use the individual commands directly (backward compatible):
+Legacy individual commands are also available (backward compatible):
 
-    check_biblio -h
-    create_bibtex -h
-    create_latex -h
+    check_biblio --help
+    create_bibtex --help
+    create_latex --help
 
 From a local checkout, you can still install it with `pip` in editable mode:
 
@@ -48,30 +42,19 @@ To generate the final PDF you need a working LaTeX toolchain with `pdflatex` and
 
 ## How to use it
 
-First create the BibTeX file downloading all your bib entries. You can use either the main command with subcommands or the individual commands:
+First create the BibTeX file downloading all your bib entries:
 
-Using the main command:
+    listofpublications create-bibtex --help
+    listofpublications create-bibtex --query "author%3AR.Turra.1%20and%20collection%3APublished"
 
-    listofpublications create-bibtex -h
+This downloads the entries from [inspirehep.net](https://inspirehep.net/) and produces a BibTeX file as `bibtex_YYYY-MM-DD.bib`. 
 
-Or using the individual command:
+*Note: If you get problems downloading from INSPIREHEP, you can manually download the BibTeX from inspire.hep going to your profile and using the "cite all" button. However, this is limited to 1000 entries. If needed, select different years and merge the files.*
 
-    create_bibtex -h
-
-It downloads the entries from [inspirehep.net](https://inspirehep.net/) and produces a BibTeX file as `bibtex_2016-02-07.bib`. If you get problems you can download the BibTex from inspire.hep, going on your profile and using the "cite all" button. Actually, this is faster, but you can download only 1000 entries. In this case, you can select a few years on the left and then merge the files.
-
-Usually, many LaTeX errors are present, you can fix them with:
+Then fix LaTeX/Unicode errors:
 
     listofpublications check-biblio --fix-unicode <bibtexfilename.bib>
 
-Or using the individual command:
-
-    check_biblio --fix-unicode <bibtexfilename.bib>
-
-Finally to create the PDF, use:
+Finally generate the PDF:
 
     listofpublications create-latex <bibtexfilename_new.bib>
-
-Or:
-
-    create_latex <bibtexfilename_new.bib>
