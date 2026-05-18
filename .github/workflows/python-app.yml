@@ -28,7 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest
-        pip install -r requirements.txt
+        pip install -e .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -43,3 +43,11 @@ jobs:
     - name: Test with pytest
       run: |
         python -m pytest
+    - name: Install package for smoke tests
+      run: |
+        python -m pip install .
+    - name: Smoke test CLI entry points
+      run: |
+        check_biblio -h
+        create_bibtex -h
+        create_latex -h
