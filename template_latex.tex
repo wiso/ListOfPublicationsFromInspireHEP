@@ -4,9 +4,16 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{color}
+\usepackage[x11names]{xcolor}
 \usepackage{amsmath}
-\usepackage[ocgcolorlinks,pdfusetitle]{hyperref}
+\usepackage{geometry}
+\usepackage{hyperref}
+\hypersetup{
+	breaklinks = true,
+	colorlinks = true,
+	urlcolor = DeepSkyBlue3,
+	pdfpagemode={UseOutlines}
+}
 \usepackage[backend=bibtex, style=numeric-comp, sorting=none, firstinits=true, defernumbers=true]{biblatex}
 % adapted from biblatex.def
 \renewbibmacro*{author}{%
