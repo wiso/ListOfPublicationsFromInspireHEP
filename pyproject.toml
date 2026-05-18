@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 dependencies = [
-  "bibtexparser==2.0.0b4",
+  "bibtexparser>=2.0.0b4,<3",
   "requests",
   "tqdm",
 ]
