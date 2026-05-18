@@ -8,6 +8,12 @@ Create a list of publications from InspireHEP and produce a LaTeX document and a
 
 The simplest way to run the CLI commands once without installing them is `uvx`:
 
+    uvx --from listofpublicationsfrominspirehep listofpublications check-biblio -h
+    uvx --from listofpublicationsfrominspirehep listofpublications create-bibtex -h
+    uvx --from listofpublicationsfrominspirehep listofpublications create-latex -h
+
+Or use the individual command names directly:
+
     uvx --from listofpublicationsfrominspirehep check_biblio -h
     uvx --from listofpublicationsfrominspirehep create_bibtex -h
     uvx --from listofpublicationsfrominspirehep create_latex -h
@@ -18,7 +24,13 @@ The simplest persistent install for end users is `pipx`:
 
     pipx install listofpublicationsfrominspirehep
 
-After installation, the commands are available directly:
+After installation, you can use the main command with subcommands:
+
+    listofpublications check-biblio -h
+    listofpublications create-bibtex -h
+    listofpublications create-latex -h
+
+Or use the individual commands directly (backward compatible):
 
     check_biblio -h
     create_bibtex -h
@@ -36,16 +48,30 @@ To generate the final PDF you need a working LaTeX toolchain with `pdflatex` and
 
 ## How to use it
 
-First create the BibTeX file downloading all your bib entries, for the options try:
+First create the BibTeX file downloading all your bib entries. You can use either the main command with subcommands or the individual commands:
+
+Using the main command:
+
+    listofpublications create-bibtex -h
+
+Or using the individual command:
 
     create_bibtex -h
 
-it downloads the entries from [inspirehep.net](https://inspirehep.net/) and produces a BibTeX file as `bibtex_2016-02-07.bib`. If you get problems you can download the BibTex from inspire.hep, going on your profile and using the "cite all" button. Actually, this is faster, but you can download only 1000 entries. In this case, you can select a few years on the left and then merge the files.
+It downloads the entries from [inspirehep.net](https://inspirehep.net/) and produces a BibTeX file as `bibtex_2016-02-07.bib`. If you get problems you can download the BibTex from inspire.hep, going on your profile and using the "cite all" button. Actually, this is faster, but you can download only 1000 entries. In this case, you can select a few years on the left and then merge the files.
 
 Usually, many LaTeX errors are present, you can fix them with:
 
+    listofpublications check-biblio --fix-unicode <bibtexfilename.bib>
+
+Or using the individual command:
+
     check_biblio --fix-unicode <bibtexfilename.bib>
 
-Finally to create the PDF:
+Finally to create the PDF, use:
+
+    listofpublications create-latex <bibtexfilename_new.bib>
+
+Or:
 
     create_latex <bibtexfilename_new.bib>

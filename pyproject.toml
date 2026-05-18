@@ -37,9 +37,10 @@ Repository = "https://github.com/wiso/ListOfPublicationsFromInspireHEP"
 Issues = "https://github.com/wiso/ListOfPublicationsFromInspireHEP/issues"
 
 [project.scripts]
+listofpublications = "cli:main"
 check_biblio = "check_biblio:main"
 create_bibtex = "create_bibtex:main"
 create_latex = "create_latex:main"
 
 [tool.setuptools]
-py-modules = ["check_biblio", "create_bibtex", "create_latex"]
+py-modules = ["cli", "check_biblio", "create_bibtex", "create_latex"]
