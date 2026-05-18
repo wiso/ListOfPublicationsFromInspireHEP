@@ -3,37 +3,25 @@
 
 Create a list of publications from InspireHEP and produce a LaTeX document and a PDF. This tool can be useful when the list is very long and there are some LaTeX errors in the BibTeX entries.
 
-## Install
+## Run it
 
-From a local checkout (classic workflow):
-
-    python -m pip install -r requirements.txt
-
-Install the CLI tools with `pipx` (persistent install):
-
-    pipx install listofpublicationsfrominspirehep
-
-or run one-shot without installing with `uvx`:
+To run the script, you don't need to install it, you can use `uvx` to run it directly from the repository:
 
     uvx --from listofpublicationsfrominspirehep check_biblio -h
     uvx --from listofpublicationsfrominspirehep create_bibtex -h
     uvx --from listofpublicationsfrominspirehep create_latex -h
 
-## Publish to PyPI
+## Install
 
-The repository now includes a GitHub Actions workflow that publishes a release to PyPI when you push a tag that starts with `v`.
+If, on the other hand, you want to install it, you can do it with `pip`:
 
-Typical flow:
+From a local checkout (classic workflow):
 
-1. Bump the version in [pyproject.toml](pyproject.toml) and commit it.
-2. Create and push a tag such as `v0.1.1`.
-3. GitHub Actions runs tests, builds the wheel/sdist, and publishes to PyPI.
-
-Before the first release, enable trusted publishing for this repository in your PyPI project settings, or replace it with an API token-based setup if you prefer that model.
+    python -m pip install -r requirements.txt
 
 ## How to use it
 
-First create the BibTex file downloading all your bib entries, for the options try:
+First create the BibTeX file downloading all your bib entries, for the options try:
 
     create_bibtex -h
 
