@@ -240,7 +240,7 @@ Try to cite: \cite{CITATION}.
         return error
 
 
-def run_entry(entry, db, fix_unicode) -> None:
+def run_entry(entry, db, fix_unicode, use_bibtex) -> None:
     raw_original = entry.raw.strip()
 
     from_cache = db.query(raw_original)
@@ -255,7 +255,7 @@ def run_entry(entry, db, fix_unicode) -> None:
             log.debug("unicode found in %s, fixing", entry.key)
 
     while True:
-        error = check_latex_entry(entry.key, raw_proposed, args.use_bibtex)
+        error = check_latex_entry(entry.key, raw_proposed, use_bibtex)
         if error is None:
             break
 
@@ -269,7 +269,7 @@ def run_entry(entry, db, fix_unicode) -> None:
     db.update(entry.key, raw_original, raw_proposed)
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Check LaTeX bibliography",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -316,7 +316,7 @@ if __name__ == "__main__":
                     def partial_function(entry):
                         with print_lock:
                             pbar.set_description(entry.key)
-                        run_entry(entry, db, args.fix_unicode)
+                        run_entry(entry, db, args.fix_unicode, args.use_bibtex)
                         with print_lock:
                             pbar.update()
 
@@ -350,3 +350,7 @@ if __name__ == "__main__":
         new_biblio_fn = args.bibtex.replace(".bib", "_new.bib")
         with open(new_biblio_fn, "w", encoding="utf-8") as f:
             f.write(biblio)
+
+
+if __name__ == "__main__":
+    main()

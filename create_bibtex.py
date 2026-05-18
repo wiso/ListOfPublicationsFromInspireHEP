@@ -8,20 +8,12 @@ import io
 import logging
 import argparse
 
-parser = argparse.ArgumentParser(description='Create bibliography from inspirehep',
-                                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                                 epilog='example: create_bibtex.py --query author%3AR.Turra.1%20and%20collection%3APublished where R.Turra.1 is from here: https://inspirehep.net/authors?sort=bestmatch&size=25&page=1&q=turra')
-parser.add_argument('--baseurl', default="https://inspirehep.net/api/")
-parser.add_argument('--query', help='query', required=True)
-args = parser.parse_args()
-
 logger = logging.getLogger('create bibtex')
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(levelname)s: %(message)s')
 ch = logging.StreamHandler()
 ch.setFormatter(formatter)
 logger.addHandler(ch)
-BASEURL = args.baseurl
 
 
 def build_query(**kwargs):
@@ -38,47 +30,60 @@ def build_all_queries(nper_step=50, **kwargs):
         kwargs['page'] += 1
 
 
-inspire_args = {'q': args.query, 'format': 'bibtex',
-                #'of': 'hx', 'em': 'B', 'sf': 'year', 'so': 'd', 'rg': 5, 'tc': 'p'
-                }
+def main() -> None:
+    parser = argparse.ArgumentParser(description='Create bibliography from inspirehep',
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     epilog='example: create_bibtex --query author%3AR.Turra.1%20and%20collection%3APublished where R.Turra.1 is from here: https://inspirehep.net/authors?sort=bestmatch&size=25&page=1&q=turra')
+    parser.add_argument('--baseurl', default="https://inspirehep.net/api/")
+    parser.add_argument('--query', help='query', required=True)
+    args = parser.parse_args()
 
-bibtex = ""
+    baseurl = args.baseurl
+    inspire_args = {'q': args.query, 'format': 'bibtex',
+                    #'of': 'hx', 'em': 'B', 'sf': 'year', 'so': 'd', 'rg': 5, 'tc': 'p'
+                    }
 
-for query in build_all_queries(**inspire_args):
-    url = BASEURL + query
-    session = requests.Session()
-    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[ 500, 502, 503, 504 ])
-    adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
-    r = session.get(url)
-    if not r.status_code == requests.codes.ok:
-        raise IOError("cannot connect to %s, code: %s" % (url, r.status_code))
+    bibtex = ""
 
-    content = r.text  # this is unicode
+    for query in build_all_queries(**inspire_args):
+        url = baseurl + query
+        session = requests.Session()
+        retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        r = session.get(url)
+        if not r.status_code == requests.codes.ok:
+            raise IOError("cannot connect to %s, code: %s" % (url, r.status_code))
 
-    if content.count('@') == 0:
-        break
+        content = r.text  # this is unicode
 
-    try:
-        bibtex += content
-    except AttributeError:
-        # special case for python < 2.7
-        def itertext(self):
-            tag = self.tag
-            if not isinstance(tag, str) and tag is not None:
-                return
-            if self.text:
-                yield self.text
-            for e in self:
-                for s in itertext(e):
-                    yield s
-                if e.tail:
-                    yield e.tail
-        bibtex += ''.join(itertext(ElementTree.fromstring(r.content)))
-    bibtex += r"%% ==============="
-    logger.info('%d items found...', bibtex.count('@'))
+        if content.count('@') == 0:
+            break
 
-logger.info('%d items found', bibtex.count('@'))
-with io.open('bibtex_%s.bib' % str(datetime.date.today()), 'w') as f:
-    f.write(bibtex)
+        try:
+            bibtex += content
+        except AttributeError:
+            # special case for python < 2.7
+            def itertext(self):
+                tag = self.tag
+                if not isinstance(tag, str) and tag is not None:
+                    return
+                if self.text:
+                    yield self.text
+                for e in self:
+                    for s in itertext(e):
+                        yield s
+                    if e.tail:
+                        yield e.tail
+            bibtex += ''.join(itertext(ElementTree.fromstring(r.content)))
+        bibtex += r"%% ==============="
+        logger.info('%d items found...', bibtex.count('@'))
+
+    logger.info('%d items found', bibtex.count('@'))
+    with io.open('bibtex_%s.bib' % str(datetime.date.today()), 'w') as f:
+        f.write(bibtex)
+
+
+if __name__ == "__main__":
+    main()
