@@ -8,8 +8,8 @@ Create a list of publications from InspireHEP and produce a LaTeX document and a
 
 The simplest way to run the CLI commands once without installing them is `uvx`:
 
-    uvx --from listofpublicationsfrominspirehep listofpublications -h
-    uvx --from listofpublicationsfrominspirehep listofpublications check-biblio -h
+    uvx listofpublicationsfrominspirehep -h
+    uvx listofpublicationsfrominspirehep check-biblio -h
 
 ## Install
 

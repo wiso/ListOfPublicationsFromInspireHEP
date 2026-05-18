@@ -37,6 +37,7 @@ Repository = "https://github.com/wiso/ListOfPublicationsFromInspireHEP"
 Issues = "https://github.com/wiso/ListOfPublicationsFromInspireHEP/issues"
 
 [project.scripts]
+listofpublicationsfrominspirehep = "cli:main"
 listofpublications = "cli:main"
 check_biblio = "check_biblio:main"
 create_bibtex = "create_bibtex:main"

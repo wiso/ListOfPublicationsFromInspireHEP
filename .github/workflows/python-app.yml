@@ -48,6 +48,8 @@ jobs:
         python -m pip install .
     - name: Smoke test CLI entry points
       run: |
+        listofpublicationsfrominspirehep -h
+        listofpublicationsfrominspirehep check-biblio -h
         listofpublications -h
         listofpublications check-biblio -h
         listofpublications create-bibtex -h
