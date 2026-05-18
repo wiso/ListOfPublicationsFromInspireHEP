@@ -269,6 +269,11 @@ def run_entry(entry, db, fix_unicode, use_bibtex) -> None:
     db.update(entry.key, raw_original, raw_proposed)
 
 
+def load_bibliography(filename: str):
+    with open(filename, encoding="utf-8") as bibtex_file:
+        return bibtexparser.load(bibtex_file)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Check LaTeX bibliography",
@@ -292,7 +297,7 @@ def main() -> None:
         os.environ["EDITOR"] = editor_command.strip()
 
     try:
-        biblio_parsed = bibtexparser.parse_file(args.bibtex)
+        biblio_parsed = load_bibliography(args.bibtex)
     except FileNotFoundError:
         print(f"cannot find file {args.bibtex}")
         sys.exit(1)
