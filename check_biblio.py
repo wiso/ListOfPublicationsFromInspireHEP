@@ -121,6 +121,7 @@ def replace_unicode(item: str) -> str:
         "−": "-",
         "∗": "*",
         "Λ": r"\Lambda",
+        "τ": r"\tau",
     }
 
     def replace_chars(match):
