@@ -54,8 +54,8 @@ class DataBase:
                 res = self._cur.execute(query, (original,))
                 r = res.fetchone()
         except sqlite3.OperationalError as ex:
-            log.warning(f"problem executing query {query} with {original}")
-            log.warning("error: %s" % ex)
+            log.warning("problem executing query %s with %s", query, original)
+            log.warning("error: %s",  ex)
             raise ex
         if r:
             proposed = r[2]
@@ -134,8 +134,8 @@ def replace_unicode(item: str) -> str:
 
 def find_error_latex(filename: str) -> str:
     """Find the error in the log file"""
-    log = open(filename, "r", encoding="utf-8").read()
-    splitted = log.split("\n")
+    log_file = open(filename, "r", encoding="utf-8").read()
+    splitted = log_file.split("\n")
     for iline, line in enumerate(splitted):
         if (
             "error" in line.lower()
@@ -215,7 +215,7 @@ Try to cite: \cite{CITATION}.
 
         error = None
         stdout_fn = os.path.join(tmpdirname, "stdout.temp")
-        stdout = open(stdout_fn, "w+")
+        stdout = open(stdout_fn, "w+", encoding="utf-8")
 
         try:
             subprocess.check_call(
@@ -261,7 +261,7 @@ def run_entry(entry, db, fix_unicode, use_bibtex) -> None:
             break
 
         with print_lock:
-            log.error(f"problem running item {entry.key}")
+            log.error("problem running item %s", entry.key)
             raw_proposed = modify_item(raw_proposed, error).strip()
 
     if raw_original != raw_proposed:

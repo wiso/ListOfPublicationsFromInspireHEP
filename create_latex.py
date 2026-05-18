@@ -11,11 +11,11 @@ def main() -> None:
     args = parser.parse_args()
 
     template_filename = "template_latex.tex"
-    with open(template_filename) as f:
+    with open(template_filename, 'r', encoding='utf-8') as f:
         template = f.read()
 
     template = template.replace("ADD_BIBTEX_HERE", args.bibtex)
-    with open('publications.tex', 'w') as f:
+    with open('publications.tex', 'w', encoding='utf-8') as f:
         f.write(template)
 
     subprocess.call(['pdflatex', 'publications.tex'])

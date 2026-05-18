@@ -8,57 +8,63 @@ import io
 import logging
 import argparse
 
-logger = logging.getLogger('create bibtex')
+logger = logging.getLogger("create bibtex")
 logger.setLevel(logging.INFO)
-formatter = logging.Formatter('%(levelname)s: %(message)s')
+formatter = logging.Formatter("%(levelname)s: %(message)s")
 ch = logging.StreamHandler()
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
 def build_query(**kwargs):
-    query = 'literature?'
-    query += '&'.join([k + "=" + str(v) for k, v in list(kwargs.items())])
+    query = "literature?"
+    query += "&".join([k + "=" + str(v) for k, v in list(kwargs.items())])
     return query
 
 
 def build_all_queries(nper_step=50, **kwargs):
-    kwargs['size'] = nper_step
-    kwargs['page'] = 1
+    kwargs["size"] = nper_step
+    kwargs["page"] = 1
     while True:
         yield build_query(**kwargs)
-        kwargs['page'] += 1
+        kwargs["page"] += 1
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Create bibliography from inspirehep',
-                                     formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     epilog='example: create_bibtex --query author%3AR.Turra.1%20and%20collection%3APublished where R.Turra.1 is from here: https://inspirehep.net/authors?sort=bestmatch&size=25&page=1&q=turra')
-    parser.add_argument('--baseurl', default="https://inspirehep.net/api/")
-    parser.add_argument('--query', help='query', required=True)
+    parser = argparse.ArgumentParser(
+        description="Create bibliography from inspirehep",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="example: create_bibtex --query author%3AR.Turra.1%20and%20collection%3APublished where R.Turra.1 is from here: https://inspirehep.net/authors?sort=bestmatch&size=25&page=1&q=turra",
+    )
+    parser.add_argument("--baseurl", default="https://inspirehep.net/api/")
+    parser.add_argument("--query", help="query", required=True)
     args = parser.parse_args()
 
     baseurl = args.baseurl
-    inspire_args = {'q': args.query, 'format': 'bibtex',
-                    #'of': 'hx', 'em': 'B', 'sf': 'year', 'so': 'd', 'rg': 5, 'tc': 'p'
-                    }
+    inspire_args = {
+        "q": args.query,
+        "format": "bibtex",
+        #'of': 'hx', 'em': 'B', 'sf': 'year', 'so': 'd', 'rg': 5, 'tc': 'p'
+    }
 
     bibtex = ""
 
     for query in build_all_queries(**inspire_args):
         url = baseurl + query
         session = requests.Session()
-        retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
+        retry = Retry(
+            total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504]
+        )
         adapter = HTTPAdapter(max_retries=retry)
-        session.mount('http://', adapter)
-        session.mount('https://', adapter)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
         r = session.get(url)
         if not r.status_code == requests.codes.ok:
             raise IOError("cannot connect to %s, code: %s" % (url, r.status_code))
 
         content = r.text  # this is unicode
 
-        if content.count('@') == 0:
+        if content.count("@") == 0:
             break
 
         try:
@@ -76,12 +82,15 @@ def main() -> None:
                         yield s
                     if e.tail:
                         yield e.tail
-            bibtex += ''.join(itertext(ElementTree.fromstring(r.content)))
-        bibtex += r"%% ==============="
-        logger.info('%d items found...', bibtex.count('@'))
 
-    logger.info('%d items found', bibtex.count('@'))
-    with io.open('bibtex_%s.bib' % str(datetime.date.today()), 'w') as f:
+            bibtex += "".join(itertext(ElementTree.fromstring(r.content)))
+        bibtex += r"%% ==============="
+        logger.info("%d items found...", bibtex.count("@"))
+
+    logger.info("%d items found", bibtex.count("@"))
+    with io.open(
+        "bibtex_%s.bib" % str(datetime.date.today()), "w", encoding="utf-8"
+    ) as f:
         f.write(bibtex)
 
 

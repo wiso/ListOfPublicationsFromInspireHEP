@@ -41,7 +41,7 @@ First create the BibTeX file downloading all your bib entries:
     listofpublications create-bibtex --help
     listofpublications create-bibtex --query "author%3AR.Turra.1%20and%20collection%3APublished"
 
-This downloads the entries from [inspirehep.net](https://inspirehep.net/) and produces a BibTeX file as `bibtex_YYYY-MM-DD.bib`. 
+This downloads the entries from [inspirehep.net](https://inspirehep.net/) and produces a BibTeX file as `bibtex_YYYY-MM-DD.bib`.
 
 *Note: If you get problems downloading from INSPIREHEP, you can manually download the BibTeX from inspire.hep going to your profile and using the "cite all" button. However, this is limited to 1000 entries. If needed, select different years and merge the files.*
 
