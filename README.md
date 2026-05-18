@@ -9,23 +9,15 @@ From a local checkout (classic workflow):
 
     python -m pip install -r requirements.txt
 
-CLI tools via `pipx`/`uvx` directly from GitHub, without publishing to PyPI:
+Install the CLI tools with `pipx` (persistent install):
 
-    pipx install "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git"
+    pipx install listofpublicationsfrominspirehep
 
-or run one-shot without a persistent install:
+or run one-shot without installing with `uvx`:
 
-    uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" check_biblio -h
-
-    uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" create_bibtex -h
-
-    uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" create_latex -h
-
-Installed/exposed commands are:
-
-    check_biblio
-    create_bibtex
-    create_latex
+    uvx --from listofpublicationsfrominspirehep check_biblio -h
+    uvx --from listofpublicationsfrominspirehep create_bibtex -h
+    uvx --from listofpublicationsfrominspirehep create_latex -h
 
 ## Publish to PyPI
 
