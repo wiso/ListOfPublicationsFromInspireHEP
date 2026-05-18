@@ -9,29 +9,35 @@ From a local checkout (classic workflow):
 
     python -m pip install -r requirements.txt
 
-CLI tools via `pipx`/`uvx` (no manual clone needed):
+CLI tools via `pipx`/`uvx` directly from GitHub, without publishing to PyPI:
 
-1. From PyPI (after publishing):
+    pipx install "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git"
 
-       pipx install listofpublicationsfrominspirehep
+or run one-shot without a persistent install:
 
-   or run without persistent install:
+    uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" check_biblio -h
 
-       uvx --from listofpublicationsfrominspirehep check_biblio -h
+    uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" create_bibtex -h
 
-2. Directly from GitHub:
-
-       pipx install "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git"
-
-   or one-shot execution:
-
-       uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" create_bibtex -h
+    uvx --from "git+https://github.com/wiso/ListOfPublicationsFromInspireHEP.git" create_latex -h
 
 Installed/exposed commands are:
 
     check_biblio
     create_bibtex
     create_latex
+
+## Publish to PyPI
+
+The repository now includes a GitHub Actions workflow that publishes a release to PyPI when you push a tag that starts with `v`.
+
+Typical flow:
+
+1. Bump the version in [pyproject.toml](pyproject.toml) and commit it.
+2. Create and push a tag such as `v0.1.1`.
+3. GitHub Actions runs tests, builds the wheel/sdist, and publishes to PyPI.
+
+Before the first release, enable trusted publishing for this repository in your PyPI project settings, or replace it with an API token-based setup if you prefer that model.
 
 ## How to use it
 
